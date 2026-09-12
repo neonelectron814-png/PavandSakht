@@ -1,0 +1,6 @@
+{
+  "name": "پیوندساخت (آکانا)",
+  "description": "پیوندساخت؛ اتصال هوشمندانه - سامانه جامع مبادلات ملکی، تهاتر مصالح ساختمانی، پیوند عمران و راهسازی، خرید اقساطی، نیازمندی‌های مشتریان و استعلام کاداستر ثبت اسناد.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
