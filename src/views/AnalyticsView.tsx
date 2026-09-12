@@ -7,18 +7,18 @@ import {
   BarChart3, 
   ArrowUpRight, 
   Scale, 
-  Play, 
-  Pause, 
   Clock, 
   ChevronDown, 
-  Activity,
-  CheckCircle2
+  ShieldCheck,
+  Calendar
 } from 'lucide-react';
 import { 
   ASSET_MARKET_DATA, 
   TIMEFRAME_OPTIONS, 
   TimeframeKey 
 } from '../data/timeframeChartData';
+import { toPersianDigits, formatRial } from '../utils/persianUtils';
+import { AndroidShamsiDateBar } from '../components/common/AndroidShamsiDateBar';
 
 export const AnalyticsView: React.FC = () => {
   // 1. Unified Asset Unit Selection
@@ -31,9 +31,7 @@ export const AnalyticsView: React.FC = () => {
   const [timeframe, setTimeframe] = useState<TimeframeKey>('day');
 
   // 4. Real-Time Live Engine States
-  const [isLiveActive, setIsLiveActive] = useState<boolean>(true);
   const [lastTickDir, setLastTickDir] = useState<'up' | 'down' | 'neutral'>('neutral');
-  const [pingMs, setPingMs] = useState<number>(24);
 
   const activeAsset = useMemo(() => {
     return ASSET_MARKET_DATA.find((a) => a.id === selectedAssetId) || ASSET_MARKET_DATA[0];
@@ -58,14 +56,13 @@ export const AnalyticsView: React.FC = () => {
     setLastTickDir('neutral');
   }, [activeAsset, timeframe, activeTimeframeData]);
 
-  // Real-Time Simulator Engine (Updates active dataset synchronously)
+  // Real-Time Price Simulation Engine (Persian Rial Updates)
   useEffect(() => {
-    if (!isLiveActive) return;
-
     const interval = setInterval(() => {
       const deltaPercent = (Math.random() - 0.48) * 0.0035;
       setCurrentLivePrice((prev) => {
-        const nextPrice = Number((prev * (1 + deltaPercent)).toFixed(activeAsset.decimals));
+        const step = Math.round(prev * deltaPercent);
+        const nextPrice = Math.max(100, prev + step);
         const dir = nextPrice >= prev ? 'up' : 'down';
         setLastTickDir(dir);
 
@@ -99,54 +96,40 @@ export const AnalyticsView: React.FC = () => {
 
         return nextPrice;
       });
-
-      setPingMs(Math.floor(Math.random() * 14) + 16);
-    }, 2200);
+    }, 2500);
 
     return () => clearInterval(interval);
-  }, [isLiveActive, activeAsset]);
+  }, [activeAsset]);
 
   const activeTfMeta = TIMEFRAME_OPTIONS.find((t) => t.key === timeframe) || TIMEFRAME_OPTIONS[0];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* 1. Header Banner & Live Unit Selector Bar */}
+    <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-300">
+      {/* Android Solar Hijri Date Bar */}
+      <AndroidShamsiDateBar />
+
+      {/* 1. Header Banner & Unified Asset/Timeframe/Chart Selector Bar */}
       <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm bg-white space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <span className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0 shadow-xs">
               <LineChart className="w-6 h-6" />
             </span>
             <div>
               <h1 className="text-xl font-black text-slate-900">
-                مرکز پایش زنده و تحلیل تکنیکال قیمت‌ها
+                مرکز پایش زنده و تحلیل تکنیکال قیمت‌ها (ریال ایران)
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
-                انتخاب اختصاصی نمودار شمعی یا نمودار لاینی برای یک واحد قیمت با زمان‌بندی چندگانه
+                انتخاب اختصاصی نمودار شمعی یا نمودار لاینی بر اساس بازه‌های زمانی روزانه، هفتگی، ماهانه و سالانه
               </p>
             </div>
           </div>
 
-          {/* Live Status Badge and Play/Pause button */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-1.5 rounded-2xl text-xs font-mono shadow-xs">
-              <span className="relative flex h-2 w-2">
-                {isLiveActive && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                )}
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${isLiveActive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              </span>
-              <span>{isLiveActive ? 'استریم زنده فعال' : 'استریم متوقف'}</span>
-              <span className="text-[10px] text-slate-400 border-r border-slate-700 pr-1.5 mr-1.5">{pingMs}ms</span>
-            </div>
-
-            <button
-              onClick={() => setIsLiveActive(!isLiveActive)}
-              className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition-colors"
-              title={isLiveActive ? 'توقف استریم' : 'شروع استریم'}
-            >
-              {isLiveActive ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-            </button>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>مبنای ریال ایران</span>
+            </span>
           </div>
         </div>
 
@@ -154,7 +137,7 @@ export const AnalyticsView: React.FC = () => {
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pt-3 border-t border-slate-100">
           {/* Asset & Unit Selector */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-xs font-bold text-slate-500">دارایی و واحد:</span>
+            <span className="text-xs font-bold text-slate-500">انتخاب کالا و واحد:</span>
             <div className="relative">
               <select
                 value={selectedAssetId}
@@ -175,121 +158,41 @@ export const AnalyticsView: React.FC = () => {
             </span>
           </div>
 
-          {/* Timeframe & Chart Representation Mode */}
-          <div className="flex flex-wrap items-center gap-4">
-            {/* 6 Timeframes: روز | هفته | ماهانه | ۳ ماهه | ۶ ماهه | سالانه */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400 font-medium hidden sm:inline">زمان‌بندی:</span>
-              <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200/80 flex items-center gap-1">
-                {TIMEFRAME_OPTIONS.map((tf) => {
-                  const isActive = timeframe === tf.key;
-                  return (
-                    <button
-                      key={tf.key}
-                      onClick={() => setTimeframe(tf.key)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-white text-indigo-700 shadow-xs border border-indigo-100'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                      title={`${tf.badgeFa} (${tf.subLabelFa})`}
-                    >
-                      {tf.labelFa}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          {/* Chart Representation Mode */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-slate-500 font-bold hidden sm:inline">نوع نمودار:</span>
+            <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200/80 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setDisplayChartType('candlestick')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  displayChartType === 'candlestick'
+                    ? 'bg-white text-indigo-700 shadow-xs border border-indigo-100'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>نمودار شمعی</span>
+              </button>
 
-            {/* Strictly Binary Chart Choice: Only Candlestick OR Line */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400 font-medium hidden sm:inline">نوع نمودار:</span>
-              <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200/80 flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setDisplayChartType('candlestick')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    displayChartType === 'candlestick'
-                      ? 'bg-white text-indigo-700 shadow-xs border border-indigo-100'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <BarChart3 className="w-3.5 h-3.5" />
-                  <span>نمودار شمعی</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDisplayChartType('line')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    displayChartType === 'line'
-                      ? 'bg-white text-emerald-700 shadow-xs border border-emerald-100'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>نمودار لاینی</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setDisplayChartType('line')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  displayChartType === 'line'
+                    ? 'bg-white text-emerald-700 shadow-xs border border-emerald-100'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>نمودار لاینی</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. KPI Index Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-          <span className="text-xs text-slate-400">آخرین نرخ لحظه‌ای:</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-lg font-black text-slate-900 font-mono">
-              {currentLivePrice.toLocaleString('fa-IR')}
-            </span>
-            <span className="text-xs font-bold text-emerald-600 flex items-center">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              +{activeAsset.change24h}٪
-            </span>
-          </div>
-          <span className="text-[10px] text-slate-400 block">{activeAsset.unitFa}</span>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-          <span className="text-xs text-slate-400">نمودار انتخابی:</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-black text-slate-900">
-              {displayChartType === 'candlestick' ? 'نمودار شمعی (Candlestick)' : 'نمودار لاینی (Line Chart)'}
-            </span>
-            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              فعال
-            </span>
-          </div>
-          <span className="text-[10px] text-slate-400 block">نمایش انحصاری تک‌نمودار</span>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-          <span className="text-xs text-slate-400">زمان‌بندی انتخابی:</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-black text-indigo-700">
-              {activeTfMeta.badgeFa} ({activeTfMeta.labelFa})
-            </span>
-            <span className="text-[11px] text-slate-500 font-mono">{activeTfMeta.subLabelFa}</span>
-          </div>
-          <span className="text-[10px] text-slate-400 block">انطباق مقیاس زمانی نمودار</span>
-        </div>
-
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-          <span className="text-xs text-slate-400">وضعیت سوکت زنده:</span>
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-black text-slate-900 font-mono">
-              {isLiveActive ? 'متصل (Streaming)' : 'متوقف'}
-            </span>
-            <span className={`w-2 h-2 rounded-full ${isLiveActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-          </div>
-          <span className="text-[10px] text-slate-400 block">شبیه‌ساز معاملات بلادرنگ بورس کالا</span>
-        </div>
-      </div>
-
-      {/* 3. Main Chart Display (Exclusively renders the chosen chart - No "both" mode) */}
+      {/* 2. Main Chart Display (Exclusively renders the chosen chart - Candlestick OR Line) */}
       <div className="space-y-4">
         {displayChartType === 'candlestick' ? (
           <RealEstateCandlestickChart
@@ -298,7 +201,7 @@ export const AnalyticsView: React.FC = () => {
             candles={candles}
             currentPrice={currentLivePrice}
             lastTickDir={lastTickDir}
-            isLive={isLiveActive}
+            isLive={true}
             timeframe={timeframe}
             onTimeframeChange={setTimeframe}
           />
@@ -309,21 +212,21 @@ export const AnalyticsView: React.FC = () => {
             trendData={trendData}
             currentPrice={currentLivePrice}
             lastTickDir={lastTickDir}
-            isLive={isLiveActive}
+            isLive={true}
             timeframe={timeframe}
             onTimeframeChange={setTimeframe}
           />
         )}
       </div>
 
-      {/* 4. Analytical Correlation Note */}
-      <div className="glass-panel p-5 rounded-2xl border border-slate-200 bg-white space-y-2 text-xs text-slate-600 leading-relaxed">
+      {/* 3. Analytical Market Transparency Summary */}
+      <div className="glass-panel p-4 sm:p-5 rounded-2xl border border-slate-200 bg-white space-y-2 text-xs text-slate-600 leading-relaxed">
         <div className="flex items-center gap-2 font-bold text-slate-900">
           <Scale className="w-4 h-4 text-emerald-600" />
-          <span>پایش تحلیلی قیمت و رفتار بازار:</span>
+          <span>شفافیت قیمت‌گذاری و مرجع رسمی معاملات:</span>
         </div>
         <p>
-          شما در حال بررسی <strong>{activeAsset.nameFa}</strong> در بازه زمانی <strong>{activeTfMeta.badgeFa}</strong> با ساختار <strong>{displayChartType === 'candlestick' ? 'شمعی ژاپنی' : 'خطی (لاینی)'}</strong> هستید. داده‌ها بر اساس جریان کشف قیمت سامانه پیوندساخت به صورت بلادرنگ به روز می‌شوند.
+          تحلیل جاری مربوط به <strong>{activeAsset.nameFa}</strong> در بازه زمانی <strong>{activeTfMeta.badgeFa}</strong> با قالب <strong>{displayChartType === 'candlestick' ? 'شمعی ژاپنی' : 'لاینی پیوسته'}</strong> است. تمامی محاسبات بر حسب <strong>ریال ایران ({activeAsset.unitFa})</strong> و منطبق با سامانه‌های کشف نرخ رسمی کشور بروزرسانی می‌گردد.
         </p>
       </div>
     </div>
